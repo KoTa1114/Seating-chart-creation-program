@@ -3,17 +3,21 @@
 #include <vector>
 #include <utility>
 #include <map>
+#include <fstream>
+#include <sstream>
+
 using namespace std;
+
 
 class People {
     private:
         string name;
         string sex;
     protected:
-        int id;
+        string id;
     public:
-        virtual void set_id(int id) {
-            if(id < 1 || 9999 < id) {
+        virtual void set_id(string id) {
+            if(id < "1" || "9999" < id) {
                 cout << "生徒番号に不適切な入力があります" << endl;
                 exit(EXIT_FAILURE);
             } else {
@@ -36,7 +40,7 @@ class People {
                 this->sex = sex;
             }
         }
-        int get_id() {
+        string get_id() {
             return this->id;
         }
         string get_name() {
@@ -49,38 +53,41 @@ class People {
 
 class Student : public People {
     private:
-        int grade;
-        string school_name;
+        string grade;
+        string school;
         vector<pair<string,int> > courses;
         vector<bool> unavailable_times;
     public:
-        void set_grade(int grade) {
-            if(grade < 1 || 6 < grade) {
+        void set_grade(string grade) {
+            if(grade < "1" || "6" < grade) {
                 cout << "学年に不適切な入力があります" << endl;
                 exit(EXIT_FAILURE);
             } else {
                 this->grade = grade;
             }
         }
-        void set_school_name(string school_name) {
-            if(school_name != "小学校" && school_name != "中学校" && school_name != "高校") {
+        void set_school(string school) {
+            if(school != "小学校" && school != "中学校" && school != "高校") {
                 cout << "学校名に不適切な入力があります" << endl;
                 exit(EXIT_FAILURE);
             } else {
-                this->school_name = school_name;
+                this->school = school;
             }
         }
         void add_courses(pair<string,int> course) {
             this->courses.push_back(course);
         }
         void add_unavailable_time(bool unavailable_time) {
+            if(unavailable_times.size() == 0) {
+                unavailable_times.push_back(false);
+            }
             this->unavailable_times.push_back(unavailable_time);
         }
-        int get_grade() {
+        string get_grade() {
             return this->grade;
         }
-        string get_school_name() {
-            return this->school_name;
+        string get_school() {
+            return this->school;
         }
         vector<pair<string,int> > get_courses() {
             return this->courses;
@@ -95,33 +102,193 @@ class Teacher : public People {
         map<string,bool> subject_in_charge;
         vector<bool> available_times;
     public:
-        void set_id(int id) {
-            if(id < 10000 || 99999 < id) {
+        void set_id(string id) {
+            if(id < "10000" || "99999" < id) {
                 cout << "講師番号に不適切な入力があります" << endl;
                 exit(EXIT_FAILURE);
             } else {
                 this->id = id;
             }
         }
-        void add_subject_in_charge(string subject, int times) {
-            this->subject_in_charge[subject] = times;
+        void add_subject_in_charge(string subject, bool ok) {
+            this->subject_in_charge[subject] = ok;
         }
         void add_available_time(bool available_time) {
+            if(available_times.size() == 0) {
+                available_times.push_back(false);
+            }
             this->available_times.push_back(available_time);
         }
-        map<string,bool> get_subject_in_charge() {
-            return this->subject_in_charge;
+        bool get_subject_in_charge(string subject) {
+            return this->subject_in_charge[subject];
         }
-        vector<bool> get_available_times() {
-            return this->available_times;
+        bool get_available_times(int time) {
+            return this->available_times[time];
         }
 };
 
+//inputをdelimiterで分割する関数
+vector<string> split(string &input, char delimiter) {
+    istringstream stream(input);
+    string field;
+    vector<string> result;
+    while(getline(stream, field, delimiter)) {
+        result.push_back(field);
+    }
+    return result;
+}
+
+//csvファイルを二次元リストに変換する関数
+vector<vector<string> > change_csv_to_vector(string csv_file_path) {
+    ifstream ifs(csv_file_path); //読み取り用ストリーム
+    vector<vector<string> > ret; //読み取ったデータの格納場所
+    if(ifs) {
+        string line;
+        while(getline(ifs,line)) {
+            vector<string> splitted_line = split(line, ',');
+            ret.push_back(splitted_line);
+        }
+    }
+    return ret;
+}
+
+//csvファイルから作成した二次元リストをStudent形式のリストに変換する関数
+vector<Student> input_student_data (string student_csv_file_path) {
+    vector<Student> student_list;
+    vector<vector<string> > student_string_list = change_csv_to_vector(student_csv_file_path);
+    int num_of_student = student_string_list.size(); //何人分の生徒情報があるか
+    map<char, string> school_int_to_string;
+    school_int_to_string['0'] = "小学校"; school_int_to_string['1'] = "中学校"; school_int_to_string['2'] = "高校";
+    map<char, string> sex_int_to_string;
+    sex_int_to_string['0'] = "男"; sex_int_to_string['1'] = "女";
+    for(vector<string> line : student_string_list) {
+        Student student;
+        student.set_school(school_int_to_string[char(line[0][0])]);
+        student.set_id(line[1]);
+        student.set_name(line[2]);
+        student.set_grade(line[3]);
+        student.set_sex(sex_int_to_string[line[4][0]]);
+        for(int i = 5 ; i <= 13 ; i++) {
+            if(line[i] == "0") student.add_unavailable_time(true);
+            else student.add_unavailable_time(false);
+        }
+        if(student.get_school() == "小学校") {
+            if(line[14] != "0") {student.add_courses(make_pair("こくご",stoi(line[14])));}
+            if(line[15] != "0") {student.add_courses(make_pair("さんすう",stoi(line[15])));}
+            if(line[16] != "0") {student.add_courses(make_pair("えいご",stoi(line[16])));}
+            if(line[17] != "0") {student.add_courses(make_pair("りか",stoi(line[17])));}
+            if(line[18] != "0") {student.add_courses(make_pair("しゃかい",stoi(line[18])));}
+        } else if(student.get_school() == "中学校") {
+            if(line[14] != "0") {student.add_courses(make_pair("国語",stoi(line[14])));}
+            if(line[15] != "0") {student.add_courses(make_pair("数学",stoi(line[15])));}
+            if(line[16] != "0") {student.add_courses(make_pair("英語",stoi(line[16])));}
+            if(line[17] != "0") {student.add_courses(make_pair("理科",stoi(line[17])));}
+            if(line[18] != "0") {student.add_courses(make_pair("社会",stoi(line[18])));}
+        } else if(student.get_school() == "高校") {
+            if(line[14] != "0") {student.add_courses(make_pair("現代文",stoi(line[14])));}
+            if(line[15] != "0") {student.add_courses(make_pair("古文",stoi(line[15])));}
+            if(line[16] != "0") {student.add_courses(make_pair("漢文",stoi(line[16])));}
+            if(line[17] != "0") {student.add_courses(make_pair("小論文",stoi(line[17])));}
+            if(line[18] != "0") {student.add_courses(make_pair("高校英語",stoi(line[18])));}
+            if(line[19] != "0") {student.add_courses(make_pair("1A",stoi(line[19])));}
+            if(line[20] != "0") {student.add_courses(make_pair("2B",stoi(line[20])));}
+            if(line[21] != "0") {student.add_courses(make_pair("3",stoi(line[21])));}
+            if(line[22] != "0") {student.add_courses(make_pair("物理基礎",stoi(line[22])));}
+            if(line[23] != "0") {student.add_courses(make_pair("物理",stoi(line[23])));}
+            if(line[24] != "0") {student.add_courses(make_pair("化学基礎",stoi(line[24])));}
+            if(line[25] != "0") {student.add_courses(make_pair("化学",stoi(line[25])));}
+            if(line[26] != "0") {student.add_courses(make_pair("生物基礎",stoi(line[26])));}
+            if(line[27] != "0") {student.add_courses(make_pair("生物",stoi(line[27])));}
+            if(line[28] != "0") {student.add_courses(make_pair("日本史",stoi(line[28])));}
+            if(line[29] != "0") {student.add_courses(make_pair("世界史",stoi(line[29])));}
+            if(line[30] != "0") {student.add_courses(make_pair("英検・TOEIC対策",stoi(line[30])));}
+        }
+        student_list.push_back(student);
+    }
+    return student_list;
+}
+
+//csvファイルから作成した二次元リストをTeacher形式のリストに変換する関数
+vector<Teacher> input_teacher_data (string teacher_csv_file_path) {
+    vector<Teacher> teacher_list;
+    vector<vector<string> > teacher_string_list = change_csv_to_vector(teacher_csv_file_path);
+    int num_of_teacher = teacher_string_list.size(); //何人分の講師情報があるか
+    for(vector<string> line : teacher_string_list) {
+        Teacher teacher;
+        teacher.set_id(line[0]);
+        teacher.set_name(line[1]);
+        teacher.set_sex(line[2]);
+        for(int i = 3 ; i <= 11 ; i++) {
+            if(line[i] != "1") teacher.add_available_time(true);
+            else teacher.add_available_time(false);
+        }
+        if(line[12] == "1") teacher.add_subject_in_charge("こくご", true);
+        else teacher.add_subject_in_charge("こくご", false);
+        if(line[13] == "1") teacher.add_subject_in_charge("さんすう", true);
+        else teacher.add_subject_in_charge("さんすう", false);
+        if(line[14] == "1") teacher.add_subject_in_charge("えいご", true);
+        else teacher.add_subject_in_charge("えいご", false);
+        if(line[15] == "1") teacher.add_subject_in_charge("りか", true);
+        else teacher.add_subject_in_charge("りか", false);
+        if(line[16] == "1") teacher.add_subject_in_charge("しゃかい", true);
+        else teacher.add_subject_in_charge("しゃかい", false);
+        if(line[17] == "1") teacher.add_subject_in_charge("国語", true);
+        else teacher.add_subject_in_charge("国語", false);
+        if(line[18] == "1") teacher.add_subject_in_charge("数学", true);
+        else teacher.add_subject_in_charge("数学", false);
+        if(line[19] == "1") teacher.add_subject_in_charge("英語", true);
+        else teacher.add_subject_in_charge("英語", false);
+        if(line[20] == "1") teacher.add_subject_in_charge("理科", true);
+        else teacher.add_subject_in_charge("理科", false);
+        if(line[21] == "1") teacher.add_subject_in_charge("社会", true);
+        else teacher.add_subject_in_charge("社会", false);
+        if(line[22] == "1") teacher.add_subject_in_charge("現代文", true);
+        else teacher.add_subject_in_charge("現代文", false);
+        if(line[23] == "1") teacher.add_subject_in_charge("古文", true);
+        else teacher.add_subject_in_charge("古文", false);
+        if(line[24] == "1") teacher.add_subject_in_charge("漢文", true);
+        else teacher.add_subject_in_charge("漢文", false);
+        if(line[25] == "1") teacher.add_subject_in_charge("小論文", true);
+        else teacher.add_subject_in_charge("小論文", false);
+        if(line[26] == "1") teacher.add_subject_in_charge("高校英語", true);
+        else teacher.add_subject_in_charge("高校英語", false);
+        if(line[27] == "1") teacher.add_subject_in_charge("1A", true);
+        else teacher.add_subject_in_charge("1A", false);
+        if(line[28] == "1") teacher.add_subject_in_charge("2B", true);
+        else teacher.add_subject_in_charge("2B", false);
+        if(line[29] == "1") teacher.add_subject_in_charge("3", true);
+        else teacher.add_subject_in_charge("3", false);
+        if(line[30] == "1") teacher.add_subject_in_charge("物理基礎", true);
+        else teacher.add_subject_in_charge("物理基礎", false);
+        if(line[31] == "1") teacher.add_subject_in_charge("物理", true);
+        else teacher.add_subject_in_charge("物理", false);
+        if(line[32] == "1") teacher.add_subject_in_charge("化学基礎", true);
+        else teacher.add_subject_in_charge("化学基礎", false);
+        if(line[33] == "1") teacher.add_subject_in_charge("化学", true);
+        else teacher.add_subject_in_charge("化学", false);
+        if(line[34] == "1") teacher.add_subject_in_charge("生物基礎", true);
+        else teacher.add_subject_in_charge("生物基礎", false);
+        if(line[35] == "1") teacher.add_subject_in_charge("生物", true);
+        else teacher.add_subject_in_charge("生物", false);
+        if(line[36] == "1") teacher.add_subject_in_charge("日本史", true);
+        else teacher.add_subject_in_charge("日本史", false);
+        if(line[37] == "1") teacher.add_subject_in_charge("世界史", true);
+        else teacher.add_subject_in_charge("世界史", false);
+        if(line[38] == "1") teacher.add_subject_in_charge("英検・TOEIC対策", true);
+        else teacher.add_subject_in_charge("英検・TOEIC対策", false);
+        teacher_list.push_back(teacher);
+    }
+    return teacher_list;
+}
 
 
 int main(){
+    string student_csv_file_path = "";
+    string teacher_csv_file_path = "";
+    vector<Student> student_list = input_student_data(student_csv_file_path);
+    vector<Teacher> teacher_list = input_teacher_data(teacher_csv_file_path);
     Student p;
-    p.set_id(10000);
+    p.set_id("10000");
     cout << p.get_id() << endl;
     return 0;
 }
