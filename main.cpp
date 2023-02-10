@@ -297,13 +297,53 @@ vector<Teacher> input_teacher_data (string teacher_csv_file_path) {
     return teacher_list;
 }
 
+//calculate_difficultyで利用する科目リスト
+string subjects_list[27] = {"こくご", "さんすう", "えいご", "りか", "しゃかい",
+"国語", "数学", "英語", "社会", "理科",
+"現代文", "古文", "漢文", "小論文", "高校英語", "1A", "2B",
+"3", "物理基礎", "物理", "化学基礎", "化学", "生物基礎", "生物",
+"日本史", "世界史", "英検・TOEIC対策"};
+
 //生徒の受講希望科目への対応の難しさを計算する (座席表作成部分で利用)
 void calculate_difficulty(vector<Student> student_list, vector<Teacher> teacher_list) {
-
+    map<string, int> subject_difficulty;
+    //生徒情報を反映させる
+    for(Student student : student_list) {
+        vector<pair<string, int> > student_courses = student.get_courses();
+        for(pair<string, int> course : student_courses) {
+            subject_difficulty[course.first] += course.second;
+        }
+    }
+    //講師情報を反映させる
+    for(Teacher teacher : teacher_list) {
+        for(string subject : subjects_list) {
+            if(teacher.get_subject_in_charge(subject) == true) {
+                subject_difficulty[subject] -= 1;
+            }
+        }
+    }
+    //subject_difficultyから各生徒のdifficultyを計算する
+    for(Student student : student_list) {
+        int difficulty = 100;
+        vector<pair<string, int> > student_courses = student.get_courses();
+        for(pair<string, int> course : student_courses) {
+            difficulty += subject_difficulty[course.first] * course.second;
+        }
+        student.set_difficulty(difficulty);
+    }
 }
+
 //講師の担当科目への対応範囲の広さを計算する (座席表作成部分で利用)
 void calculate_coverage(vector<Teacher> teacher_list) {
-
+    for(Teacher teacher : teacher_list) {
+        int coverage = 0;
+        for(string subject : subjects_list) {
+            if(teacher.get_subject_in_charge(subject) == true) {
+                coverage += 1;
+            }
+        }
+        teacher.set_coverage(coverage);
+    }
 }
 
 
@@ -312,6 +352,8 @@ int main(){
     string teacher_csv_file_path = "";
     vector<Student> student_list = input_student_data(student_csv_file_path);
     vector<Teacher> teacher_list = input_teacher_data(teacher_csv_file_path);
+    calculate_difficulty(student_list, teacher_list);
+    calculate_coverage(teacher_list);
     Student p;
     p.set_id("10000");
     cout << p.get_id() << endl;
