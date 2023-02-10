@@ -164,23 +164,23 @@ class Teacher : public People {
 class Table {
     private:
         string table_number;
-        string student_name1;
-        string student_name2;
-        string teacher_name;
+        Student student1;
+        Student student2;
+        Teacher teacher;
         string subject1;
         string subject2;
     public:
         void set_table_number(string table_number) {
             this->table_number = table_number;
         }
-        void set_student_name1(string student_name1) {
-            this-> student_name1 = student_name1;
+        void set_student1(Student student) {
+            this->student1 = student;
         }
-        void set_student_name2(string student_name2) {
-            this->student_name2 = student_name2;
+        void set_student2(Student student) {
+            this->student2 = student;
         }
-        void set_teacher_name(string teacher_name) {
-            this->teacher_name = teacher_name;
+        void set_teacher(Teacher teacher) {
+            this->teacher = teacher;
         }
         void set_subject1(string subject1) {
             this->subject1 = subject1;
@@ -191,14 +191,14 @@ class Table {
         string get_table_number() {
             return this->table_number;
         }
-        string get_student_name1() {
-            return this->student_name1;
+        Student get_student1() {
+            return this->student1;
         }
-        string get_student_name2() {
-            return this->student_name2;
+        Student get_student2() {
+            return this->student2;
         }
-        string get_teacher_name() {
-            return this->teacher_name;
+        Teacher get_teacher() {
+            return this->teacher;
         }
         string get_subject1() {
             return this->subject1;
@@ -207,7 +207,7 @@ class Table {
             return this->subject2;
         }
         void show_information() {
-            cout << "番号 : " << table_number << " 生徒1 : " << student_name1 << " 講師 : " << teacher_name << endl;
+            cout << "番号 : " << table_number << " 生徒1 : " << student1.get_name() << " 講師 : " << teacher.get_name() << endl;
         }
 };
 
@@ -416,9 +416,27 @@ void calculate_coverage(vector<Teacher> teacher_list) {
     }
 }
 
-//座席表を作成する関数  difficultyが高い生徒から決定していく  coverageが低い講師から決定していく
-/*vector<Table> create_table_list(vector<Student> student_list, vector<Teacher> teacher_list) {
-    vector<Table> table_list(30);
+//1コマ分の座席表を作成する関数  difficultyが高い生徒から決定していく  coverageが低い講師から決定していく
+/*vector<Table> create_table_list(vector<Student> student_list, vector<Teacher> teacher_list, int time) {
+    vector<Table> table_list;
+    sort(student_list.begin(), student_list.end(), greater<Student>()); //difficultyが高い順に並び替える
+    sort(teacher_list.begin(), teacher_list.end()); //coverageが低い順に並び替える
+    map<Teacher, bool> is_place_teacher; //講師が既に配置されているかを持つ
+    for(Student student : student_list) {
+        bool could_place = false;
+        for(Table table : table_list) {
+            if(table.get_student_name2().size() == 0) {
+                vector<pair<string, int> > courses = student.get_courses();
+                for(pair<string, int> course : courses) {
+                    if(course.second > 0 && teacher.get_subject_in_charge()) {
+                        table.set_student_name1(student.get_name());
+                        table.set_subject1(course.first);
+                    }
+                }
+            }
+        }
+    }
+    return table_list;
 }*/
 
 
@@ -429,6 +447,8 @@ int main(){
     vector<Teacher> teacher_list = input_teacher_data(teacher_csv_file_path);
     calculate_difficulty(student_list, teacher_list);
     calculate_coverage(teacher_list);
+    int time = 1;
+    vector<Table> table_list = create_table_list(student_list, teacher_list, time);
     //以下テスト用
     Teacher t1, t2;
     t1.set_coverage(1);
