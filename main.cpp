@@ -53,11 +53,15 @@ class People {
 
 class Student : public People {
     private:
+        int difficulty;
         string grade;
         string school;
         vector<pair<string,int> > courses;
         vector<bool> unavailable_times;
     public:
+        void set_difficulty(int difficulty) {
+            this->difficulty = difficulty;
+        }
         void set_grade(string grade) {
             if(grade < "1" || "6" < grade) {
                 cout << "学年に不適切な入力があります" << endl;
@@ -83,6 +87,9 @@ class Student : public People {
             }
             this->unavailable_times.push_back(unavailable_time);
         }
+        int get_difficulty() {
+            return this->difficulty;
+        }
         string get_grade() {
             return this->grade;
         }
@@ -99,6 +106,7 @@ class Student : public People {
 
 class Teacher : public People {
     private:
+        int coverage;
         map<string,bool> subject_in_charge;
         vector<bool> available_times;
     public:
@@ -110,6 +118,9 @@ class Teacher : public People {
                 this->id = id;
             }
         }
+        void set_coverage(int coverage) {
+            this->coverage = coverage;
+        }
         void add_subject_in_charge(string subject, bool ok) {
             this->subject_in_charge[subject] = ok;
         }
@@ -118,6 +129,9 @@ class Teacher : public People {
                 available_times.push_back(false);
             }
             this->available_times.push_back(available_time);
+        }
+        int get_coverage() {
+            return this->coverage;
         }
         bool get_subject_in_charge(string subject) {
             return this->subject_in_charge[subject];
@@ -163,6 +177,7 @@ vector<Student> input_student_data (string student_csv_file_path) {
     sex_int_to_string['0'] = "男"; sex_int_to_string['1'] = "女";
     for(vector<string> line : student_string_list) {
         Student student;
+        student.set_difficulty(100); //初期値として100を入力しておく
         student.set_school(school_int_to_string[char(line[0][0])]);
         student.set_id(line[1]);
         student.set_name(line[2]);
@@ -215,6 +230,7 @@ vector<Teacher> input_teacher_data (string teacher_csv_file_path) {
     int num_of_teacher = teacher_string_list.size(); //何人分の講師情報があるか
     for(vector<string> line : teacher_string_list) {
         Teacher teacher;
+        teacher.set_coverage(0); //初期値として0を入力しておく
         teacher.set_id(line[0]);
         teacher.set_name(line[1]);
         teacher.set_sex(line[2]);
@@ -279,6 +295,15 @@ vector<Teacher> input_teacher_data (string teacher_csv_file_path) {
         teacher_list.push_back(teacher);
     }
     return teacher_list;
+}
+
+//生徒の受講希望科目への対応の難しさを計算する (座席表作成部分で利用)
+void calculate_difficulty(vector<Student> student_list, vector<Teacher> teacher_list) {
+
+}
+//講師の担当科目への対応範囲の広さを計算する (座席表作成部分で利用)
+void calculate_coverage(vector<Teacher> teacher_list) {
+
 }
 
 
