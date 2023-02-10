@@ -59,6 +59,12 @@ class Student : public People {
         vector<pair<string,int> > courses;
         vector<bool> unavailable_times;
     public:
+        bool operator<(const Student &student) const {
+            return difficulty < student.difficulty;
+        }
+        bool operator>(const Student &student) const {
+            return difficulty > student.difficulty;
+        }
         void set_difficulty(int difficulty) {
             this->difficulty = difficulty;
         }
@@ -110,6 +116,12 @@ class Teacher : public People {
         map<string,bool> subject_in_charge;
         vector<bool> available_times;
     public:
+        bool operator<(const Teacher &teacher) const {
+            return coverage < teacher.coverage;
+        }
+        bool operator>(const Teacher &teacher) const {
+            return coverage > teacher.coverage;
+        }
         void set_id(string id) {
             if(id < "10000" || "99999" < id) {
                 cout << "講師番号に不適切な入力があります" << endl;
@@ -394,7 +406,9 @@ void calculate_coverage(vector<Teacher> teacher_list) {
 }
 
 //座席表を作成する関数
-
+/*vector<Table> create_table_list(vector<Student> student_list, vector<Teacher> teacher_list) {
+    vector<Table> table_list(30);
+}*/
 
 
 int main(){
@@ -404,8 +418,12 @@ int main(){
     vector<Teacher> teacher_list = input_teacher_data(teacher_csv_file_path);
     calculate_difficulty(student_list, teacher_list);
     calculate_coverage(teacher_list);
-    Student p;
-    p.set_id("10000");
-    cout << p.get_id() << endl;
+    //以下テスト用
+    Teacher t1, t2;
+    t1.set_coverage(1);
+    t2.set_coverage(2);
+    if(t1 > t2) {
+        cout << "t1の方が小さいです" << endl;
+    }
     return 0;
 }
