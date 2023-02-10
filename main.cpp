@@ -10,11 +10,10 @@ using namespace std;
 
 
 class People {
-    private:
-        string name;
-        string sex;
     protected:
         string id;
+        string name;
+        string sex;
     public:
         virtual void set_id(string id) {
             if(id < "1" || "9999" < id) {
@@ -108,6 +107,11 @@ class Student : public People {
         vector<bool> get_unavailable_times() {
             return this->unavailable_times;
         }
+        void show_information() {
+            cout << "番号 : " << id << " 氏名 : " << name << " 性別 : " << sex << endl;
+            cout << "学校 : " << school << " 学年 : " << grade << endl;
+            cout << endl;
+        }
 };
 
 class Teacher : public People {
@@ -150,6 +154,10 @@ class Teacher : public People {
         }
         bool get_available_times(int time) {
             return this->available_times[time];
+        }
+        void show_information() {
+            cout << "番号 : " << id << " 氏名 : " << name << " 性別 : " << sex << endl;
+            cout << endl;
         }
 };
 
@@ -197,6 +205,9 @@ class Table {
         }
         string get_subject2() {
             return this->subject2;
+        }
+        void show_information() {
+            cout << "番号 : " << table_number << " 生徒1 : " << student_name1 << " 講師 : " << teacher_name << endl;
         }
 };
 
@@ -405,7 +416,7 @@ void calculate_coverage(vector<Teacher> teacher_list) {
     }
 }
 
-//座席表を作成する関数
+//座席表を作成する関数  difficultyが高い生徒から決定していく  coverageが低い講師から決定していく
 /*vector<Table> create_table_list(vector<Student> student_list, vector<Teacher> teacher_list) {
     vector<Table> table_list(30);
 }*/
@@ -422,8 +433,25 @@ int main(){
     Teacher t1, t2;
     t1.set_coverage(1);
     t2.set_coverage(2);
-    if(t1 > t2) {
+    if(t1 < t2) {
         cout << "t1の方が小さいです" << endl;
     }
+    Student student;
+    student.set_id("111");
+    student.set_grade("2");
+    student.set_name("tanaka");
+    student.set_sex("女");
+    student.set_school("小学校");
+    student.show_information();
+    Teacher teacher;
+    teacher.set_id("11111");
+    teacher.set_name("masato");
+    teacher.set_sex("男");
+    teacher.show_information();
+    Table table;
+    table.set_table_number("11");
+    table.set_student_name1("akihiko");
+    table.set_teacher_name("asako");
+    table.show_information();
     return 0;
 }
