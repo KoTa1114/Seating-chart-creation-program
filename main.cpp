@@ -141,6 +141,53 @@ class Teacher : public People {
         }
 };
 
+class Table {
+    private:
+        string table_number;
+        string student_name1;
+        string student_name2;
+        string teacher_name;
+        string subject1;
+        string subject2;
+    public:
+        void set_table_number(string table_number) {
+            this->table_number = table_number;
+        }
+        void set_student_name1(string student_name1) {
+            this-> student_name1 = student_name1;
+        }
+        void set_student_name2(string student_name2) {
+            this->student_name2 = student_name2;
+        }
+        void set_teacher_name(string teacher_name) {
+            this->teacher_name = teacher_name;
+        }
+        void set_subject1(string subject1) {
+            this->subject1 = subject1;
+        }
+        void set_subject2(string subject2) {
+            this->subject2 = subject2;
+        }
+        string get_table_number() {
+            return this->table_number;
+        }
+        string get_student_name1() {
+            return this->student_name1;
+        }
+        string get_student_name2() {
+            return this->student_name2;
+        }
+        string get_teacher_name() {
+            return this->teacher_name;
+        }
+        string get_subject1() {
+            return this->subject1;
+        }
+        string get_subject2() {
+            return this->subject2;
+        }
+};
+
 //inputをdelimiterで分割する関数
 vector<string> split(string &input, char delimiter) {
     istringstream stream(input);
@@ -345,6 +392,9 @@ void calculate_coverage(vector<Teacher> teacher_list) {
         teacher.set_coverage(coverage);
     }
 }
+
+//座席表を作成する関数
+
 
 
 int main(){
