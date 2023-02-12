@@ -5,9 +5,17 @@
 #include <map>
 #include <fstream>
 #include <sstream>
+#include <algorithm>
+#include <set>
 
 using namespace std;
 
+//calculate_difficultyで利用する科目リスト
+string subjects_list[27] = {"こくご", "さんすう", "えいご", "りか", "しゃかい",
+"国語", "数学", "英語", "社会", "理科",
+"現代文", "古文", "漢文", "小論文", "高校英語", "1A", "2B",
+"3", "物理基礎", "物理", "化学基礎", "化学", "生物基礎", "生物",
+"日本史", "世界史", "英検・TOEIC対策"};
 
 class People {
     protected:
@@ -110,6 +118,9 @@ class Student : public People {
         void show_information() {
             cout << "番号 : " << id << " 氏名 : " << name << " 性別 : " << sex << endl;
             cout << "学校 : " << school << " 学年 : " << grade << endl;
+            for(pair<string, int> course : courses) {
+                cout << course.first << ' ' << course.second << "コマ" << endl;
+            }
             cout << endl;
         }
 };
@@ -159,6 +170,11 @@ class Teacher : public People {
             cout << "番号 : " << id << " 氏名 : " << name << " 性別 : " << sex << endl;
             cout << endl;
         }
+        void show_subjects() {
+            for(int i=0;i<27;i++) {
+                if(subject_in_charge[subjects_list[i]]) cout << subjects_list[i] << ' ';
+            }
+        }
 };
 
 class Table {
@@ -207,7 +223,9 @@ class Table {
             return this->subject2;
         }
         void show_information() {
-            cout << "番号 : " << table_number << " 生徒1 : " << student1.get_name() << " 講師 : " << teacher.get_name() << endl;
+            cout << "番号 : " << table_number << " 講師 : " << teacher.get_name() << endl;
+            cout << "生徒1 : " << student1.get_name() << " 科目 : " << subject1 << " 生徒2 : " << student2.get_name() << " 科目 : " << subject2 << endl; 
+            cout << endl;
         }
 };
 
@@ -303,7 +321,9 @@ vector<Teacher> input_teacher_data (string teacher_csv_file_path) {
         teacher.set_coverage(0); //初期値として0を入力しておく
         teacher.set_id(line[0]);
         teacher.set_name(line[1]);
-        teacher.set_sex(line[2]);
+        map<char, string> sex_int_to_string;
+        sex_int_to_string['0'] = "男"; sex_int_to_string['1'] = "女";
+        teacher.set_sex(sex_int_to_string[line[2][0]]);
         for(int i = 3 ; i <= 11 ; i++) {
             if(line[i] != "1") teacher.add_available_time(true);
             else teacher.add_available_time(false);
@@ -367,25 +387,19 @@ vector<Teacher> input_teacher_data (string teacher_csv_file_path) {
     return teacher_list;
 }
 
-//calculate_difficultyで利用する科目リスト
-string subjects_list[27] = {"こくご", "さんすう", "えいご", "りか", "しゃかい",
-"国語", "数学", "英語", "社会", "理科",
-"現代文", "古文", "漢文", "小論文", "高校英語", "1A", "2B",
-"3", "物理基礎", "物理", "化学基礎", "化学", "生物基礎", "生物",
-"日本史", "世界史", "英検・TOEIC対策"};
 
 //生徒の受講希望科目への対応の難しさを計算する (座席表作成部分で利用)
-void calculate_difficulty(vector<Student> student_list, vector<Teacher> teacher_list) {
+void calculate_difficulty(vector<Student> &student_list, vector<Teacher> &teacher_list) {
     map<string, int> subject_difficulty;
     //生徒情報を反映させる
-    for(Student student : student_list) {
+    for(Student &student : student_list) {
         vector<pair<string, int> > student_courses = student.get_courses();
         for(pair<string, int> course : student_courses) {
             subject_difficulty[course.first] += course.second;
         }
     }
     //講師情報を反映させる
-    for(Teacher teacher : teacher_list) {
+    for(Teacher &teacher : teacher_list) {
         for(string subject : subjects_list) {
             if(teacher.get_subject_in_charge(subject) == true) {
                 subject_difficulty[subject] -= 1;
@@ -393,7 +407,7 @@ void calculate_difficulty(vector<Student> student_list, vector<Teacher> teacher_
         }
     }
     //subject_difficultyから各生徒のdifficultyを計算する
-    for(Student student : student_list) {
+    for(Student &student : student_list) {
         int difficulty = 100;
         vector<pair<string, int> > student_courses = student.get_courses();
         for(pair<string, int> course : student_courses) {
@@ -404,8 +418,8 @@ void calculate_difficulty(vector<Student> student_list, vector<Teacher> teacher_
 }
 
 //講師の担当科目への対応範囲の広さを計算する (座席表作成部分で利用)
-void calculate_coverage(vector<Teacher> teacher_list) {
-    for(Teacher teacher : teacher_list) {
+void calculate_coverage(vector<Teacher> &teacher_list) {
+    for(Teacher &teacher : teacher_list) {
         int coverage = 0;
         for(string subject : subjects_list) {
             if(teacher.get_subject_in_charge(subject) == true) {
@@ -417,32 +431,62 @@ void calculate_coverage(vector<Teacher> teacher_list) {
 }
 
 //1コマ分の座席表を作成する関数  difficultyが高い生徒から決定していく  coverageが低い講師から決定していく
-/*vector<Table> create_table_list(vector<Student> student_list, vector<Teacher> teacher_list, int time) {
+vector<Table> create_table_list(vector<Student> &student_list, vector<Teacher> &teacher_list, int time) {
     vector<Table> table_list;
     sort(student_list.begin(), student_list.end(), greater<Student>()); //difficultyが高い順に並び替える
     sort(teacher_list.begin(), teacher_list.end()); //coverageが低い順に並び替える
-    map<Teacher, bool> is_place_teacher; //講師が既に配置されているかを持つ
-    for(Student student : student_list) {
+    set<string> is_place_teacher; //講師が既に配置されているかを持つ
+    for(Student &student : student_list) {
         bool could_place = false;
-        for(Table table : table_list) {
-            if(table.get_student_name2().size() == 0) {
-                vector<pair<string, int> > courses = student.get_courses();
-                for(pair<string, int> course : courses) {
-                    if(course.second > 0 && teacher.get_subject_in_charge()) {
-                        table.set_student_name1(student.get_name());
-                        table.set_subject1(course.first);
+        vector<pair<string, int> > courses = student.get_courses();
+        for(Table &table : table_list) {
+            if(table.get_subject2().size() == 0) {
+                for(pair<string, int> &course : courses) {
+                    if(course.second > 0 && table.get_teacher().get_subject_in_charge(course.first) == true) {
+                        table.set_student2(student);
+                        table.set_subject2(course.first);
+                        course.second--;
+                        could_place = true;
+                        break;
                     }
                 }
             }
+            if(could_place) break;
+        }
+        if(could_place == false) {
+            Table table;
+            table.set_table_number(to_string(table_list.size()+1));
+            table.set_student1(student);
+            for(pair<string, int> &course : courses) {
+                if(course.second > 0) {
+                    table.set_subject1(course.first);
+                    course.second--;
+                    for(Teacher teacher : teacher_list) {
+                        if(is_place_teacher.find(teacher.get_id()) != is_place_teacher.end()) continue;
+                        if(teacher.get_subject_in_charge(course.first) == true) {
+                            table.set_teacher(teacher);
+                            is_place_teacher.insert(teacher.get_id());
+                            could_place = true;
+                            break;
+                        }
+                    }
+                }
+                if(could_place) break;
+            }
+            if(could_place == false) {
+                cout << "生徒を担当できる講師がいません" << endl;
+                exit(EXIT_FAILURE);
+            }
+            table_list.push_back(table);
         }
     }
     return table_list;
-}*/
+}
 
 
 int main(){
-    string student_csv_file_path = "";
-    string teacher_csv_file_path = "";
+    string student_csv_file_path = "./student_test.csv";
+    string teacher_csv_file_path = "./teacher_test.csv";
     vector<Student> student_list = input_student_data(student_csv_file_path);
     vector<Teacher> teacher_list = input_teacher_data(teacher_csv_file_path);
     calculate_difficulty(student_list, teacher_list);
@@ -450,28 +494,8 @@ int main(){
     int time = 1;
     vector<Table> table_list = create_table_list(student_list, teacher_list, time);
     //以下テスト用
-    Teacher t1, t2;
-    t1.set_coverage(1);
-    t2.set_coverage(2);
-    if(t1 < t2) {
-        cout << "t1の方が小さいです" << endl;
+    for(Table table : table_list) {
+        table.show_information();
     }
-    Student student;
-    student.set_id("111");
-    student.set_grade("2");
-    student.set_name("tanaka");
-    student.set_sex("女");
-    student.set_school("小学校");
-    student.show_information();
-    Teacher teacher;
-    teacher.set_id("11111");
-    teacher.set_name("masato");
-    teacher.set_sex("男");
-    teacher.show_information();
-    Table table;
-    table.set_table_number("11");
-    table.set_student_name1("akihiko");
-    table.set_teacher_name("asako");
-    table.show_information();
     return 0;
 }
